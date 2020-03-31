@@ -60,9 +60,16 @@ const imageTests: ImageTestGroup = {
       },
     },
     {
+      name: `uri:.svg with text`,
+      props: {
+        source: images.uri_text_svg,
+      },
+    },
+    {
       name: `uri:.svg`,
       props: {
-        source: images.uri_svg,
+        source: images.uri_youtube_svg,
+        resizeMode: 'contain', // It just looks nicer :)
       },
     },
   ],
