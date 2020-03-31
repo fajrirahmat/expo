@@ -22,7 +22,7 @@ static NSString * const sourceHeightKey = @"height";
 @property (nonatomic, assign) RCTResizeMode resizeMode;
 @property (nonatomic, assign) BOOL needsReload;
 @property (nonatomic, assign) CGSize intrinsicContentSize;
-@property (nonatomic, assign) EXImageCornerRadii cornerRadii;
+@property (nonatomic, strong) EXImageCornerRadii *cornerRadii;
 @property (nonatomic, assign) EXImageBorders borders;
 @property (nonatomic, strong) NSDictionary<NSString *, CALayer *> *borderLayers;
 
@@ -37,7 +37,8 @@ static NSString * const sourceHeightKey = @"height";
     _needsReload = NO;
     _resizeMode = RCTResizeModeCover;
     _intrinsicContentSize = CGSizeZero;
-    _cornerRadii = EXImageCornerRadiiInit();
+    _reactLayoutDirection = UIUserInterfaceLayoutDirectionLeftToRight;
+    _cornerRadii = [EXImageCornerRadii new];
     _borders = EXImageBordersInit();
     _borderLayers = @{};
 
@@ -231,19 +232,22 @@ static NSString * const sourceHeightKey = @"height";
   }
   
   CGRect bounds = self.bounds;
-  BOOL swapLeftRightInRTL = [[RCTI18nUtil sharedInstance] doLeftAndRightSwapInRTL];
-  EXImageCornerRadii cornerRadii = EXImageCornerRadiiResolve(_cornerRadii, _reactLayoutDirection, swapLeftRightInRTL, bounds.size);
-  EXImageBorders borders = EXImageBordersResolve(_borders, _reactLayoutDirection, swapLeftRightInRTL);
+  [_cornerRadii updateShadowPathForLayer:self.layer bounds:bounds];
+  [_cornerRadii updateClipMaskForLayer:_imageView.layer bounds:bounds];
+  _imageView.layer.masksToBounds = YES;
   
-  [self updateShadowPathForCornerRadii:cornerRadii bounds:bounds];
-  [self updateClipMaskForCornerRadii:cornerRadii bounds:bounds];
-  [self updateBorderLayersForBorders:borders cornerRadii:cornerRadii bounds:bounds];
+  //BOOL swapLeftRightInRTL = [[RCTI18nUtil sharedInstance] doLeftAndRightSwapInRTL];
+  //EXImageCornerRadii cornerRadii = EXImageCornerRadiiResolve(_cornerRadii, _reactLayoutDirection, swapLeftRightInRTL, bounds.size);
+  //EXImageBorders borders = EXImageBordersResolve(_borders, _reactLayoutDirection, swapLeftRightInRTL);
+  
+  //[self updateBorderLayersForBorders:borders cornerRadii:cornerRadii bounds:bounds];
 }
 
 - (void)setReactLayoutDirection:(UIUserInterfaceLayoutDirection)layoutDirection
 {
   if (_reactLayoutDirection != layoutDirection) {
     _reactLayoutDirection = layoutDirection;
+    _cornerRadii.layoutDirection = layoutDirection;
     [self.layer setNeedsDisplay];
   }
   
@@ -280,64 +284,27 @@ static NSString * const sourceHeightKey = @"height";
 
 #pragma mark - Border Radius
 
-#define borderRadius(side, var)                          \
+#define borderRadius(side, corner2)                      \
 -(CGFloat)border##side##Radius                           \
 {                                                        \
-return _cornerRadii.var;                                 \
+return [_cornerRadii radiusForCorner:corner2];           \
 }                                                        \
 -(void)setBorder##side##Radius : (CGFloat)radius         \
 {                                                        \
-if (_cornerRadii.var == radius) {                        \
-return;                                                  \
+if ([_cornerRadii setRadius:radius corner:corner2]) {    \
+  [self.layer setNeedsDisplay];                          \
 }                                                        \
-_cornerRadii.var = radius;                               \
-[self.layer setNeedsDisplay];                            \
 }
 
-borderRadius(,all)
-borderRadius(TopLeft, topLeft)
-borderRadius(TopRight, topRight)
-borderRadius(TopStart, topStart)
-borderRadius(TopEnd, topEnd)
-borderRadius(BottomLeft, bottomLeft)
-borderRadius(BottomRight, bottomRight)
-borderRadius(BottomStart, bottomStart)
-borderRadius(BottomEnd, bottomEnd)
-
-- (void)updateClipMaskForCornerRadii:(EXImageCornerRadii)cornerRadii bounds:(CGRect)bounds
-{
-  CALayer *mask = nil;
-  CGFloat cornerRadius = 0;
-  
-  if (EXImageCornerRadiiAllEqual(cornerRadii)) {
-    cornerRadius = cornerRadii.topLeft;
-  } else {
-    CAShapeLayer *shapeLayer = [CAShapeLayer layer];
-    RCTCornerInsets cornerInsets = EXImageGetCornerInsets(cornerRadii, UIEdgeInsetsZero);
-    CGPathRef path = RCTPathCreateWithRoundedRect(bounds, cornerInsets, NULL);
-    shapeLayer.path = path;
-    CGPathRelease(path);
-    mask = shapeLayer;
-  }
-  
-  _imageView.layer.cornerRadius = cornerRadius;
-  _imageView.layer.mask = mask;
-  _imageView.layer.masksToBounds = YES;
-}
-
-- (void)updateShadowPathForCornerRadii:(EXImageCornerRadii)cornerRadii bounds:(CGRect)bounds
-{
-  BOOL hasShadow = self.layer.shadowOpacity * CGColorGetAlpha(self.layer.shadowColor) > 0;
-  if (!hasShadow) {
-    self.layer.shadowPath = nil;
-    return;
-  }
-  
-  RCTCornerInsets cornerInsets = EXImageGetCornerInsets(cornerRadii, UIEdgeInsetsZero);
-  CGPathRef path = RCTPathCreateWithRoundedRect(bounds, cornerInsets, NULL);
-  self.layer.shadowPath = path;
-  CGPathRelease(path);
-}
+borderRadius(,EXImageCornerAll)
+borderRadius(TopLeft, EXImageCornerTopLeft)
+borderRadius(TopRight, EXImageCornerTopRight)
+borderRadius(TopStart, EXImageCornerTopStart)
+borderRadius(TopEnd, EXImageCornerTopEnd)
+borderRadius(BottomLeft, EXImageCornerBottomLeft)
+borderRadius(BottomRight, EXImageCornerBottomRight)
+borderRadius(BottomStart, EXImageCornerBottomStart)
+borderRadius(BottomEnd, EXImageCornerBottomEnd)
 
 
 #pragma mark Border Color / Width / Style
@@ -389,7 +356,7 @@ borderEdge(Left,left)
 borderEdge(Start,start)
 borderEdge(End,end)
 
-- (void)updateBorderLayersForBorders:(EXImageBorders)borders cornerRadii:(EXImageCornerRadii)cornerRadii bounds:(CGRect)bounds
+/*- (void)updateBorderLayersForBorders:(EXImageBorders)borders cornerRadii:(EXImageCornerRadii)cornerRadii bounds:(CGRect)bounds
 {
   NSMutableDictionary<NSString *, CALayer *> *borderLayers = [NSMutableDictionary dictionary];
   
@@ -452,6 +419,6 @@ borderEdge(End,end)
     }
   }
   _borderLayers = borderLayers;
-}
+}*/
 
 @end

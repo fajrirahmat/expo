@@ -1,31 +1,32 @@
 // Copyright 2020-present 650 Industries. All rights reserved.
 
 #import <React/RCTBorderDrawing.h>
+#import <React/RCTView.h>
 
-#define EXIMAGE_CORNERRADII \
-EXIMAGE_CORNERRADIUS(,all) \
-EXIMAGE_CORNERRADIUS(TopLeft,topLeft) \
-EXIMAGE_CORNERRADIUS(TopRight,topRight) \
-EXIMAGE_CORNERRADIUS(TopStart,topStart) \
-EXIMAGE_CORNERRADIUS(TopEnd,topEnd) \
-EXIMAGE_CORNERRADIUS(BottomLeft,bottomLeft) \
-EXIMAGE_CORNERRADIUS(BottomRight,bottomRight) \
-EXIMAGE_CORNERRADIUS(BottomStart,bottomStart) \
-EXIMAGE_CORNERRADIUS(BottomEnd,bottomEnd)
+typedef NS_ENUM(NSInteger, EXImageCorner) {
+  EXImageCornerAll = 0,
+  EXImageCornerTopLeft = 1,
+  EXImageCornerTopRight = 2,
+  EXImageCornerBottomLeft = 3,
+  EXImageCornerBottomRight = 4,
+  EXImageCornerTopStart = 5,
+  EXImageCornerTopEnd = 6,
+  EXImageCornerBottomStart = 7,
+  EXImageCornerBottomEnd = 8
+};
 
-typedef struct {
-  CGFloat all;
-  CGFloat topLeft;
-  CGFloat topRight;
-  CGFloat topStart;
-  CGFloat topEnd;
-  CGFloat bottomLeft;
-  CGFloat bottomRight;
-  CGFloat bottomStart;
-  CGFloat bottomEnd;
-} EXImageCornerRadii;
+@interface EXImageCornerRadii : NSObject
 
-EXImageCornerRadii EXImageCornerRadiiInit();
-EXImageCornerRadii EXImageCornerRadiiResolve(EXImageCornerRadii cornerRadii, UIUserInterfaceLayoutDirection layoutDirection, BOOL swapLeftRightInRTL, CGSize size);
-RCTCornerInsets EXImageGetCornerInsets(EXImageCornerRadii cornerRadii, UIEdgeInsets edgeInsets);
-BOOL EXImageCornerRadiiAllEqual(EXImageCornerRadii cornerRadii);
+@property (nonatomic, assign) UIUserInterfaceLayoutDirection layoutDirection;
+
+- (instancetype)init;
+
+- (CGFloat)radiusForCorner:(EXImageCorner)corner;
+- (BOOL)setRadius:(CGFloat)radius corner:(EXImageCorner)corner;
+
+- (void)updateClipMaskForLayer:(CALayer *)layer bounds:(CGRect)bounds;
+- (void)updateShadowPathForLayer:(CALayer *)layer bounds:(CGRect)bounds;
+- (RCTCornerRadii)radiiForBounds:(CGRect)bounds;
+
+@end
+
