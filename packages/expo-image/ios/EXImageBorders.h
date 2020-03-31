@@ -3,46 +3,47 @@
 #import <React/RCTBorderStyle.h>
 #import <React/RCTBorderDrawing.h>
 
-#define EXIMAGE_BORDERS \
-EXIMAGE_BORDER(,all) \
-EXIMAGE_BORDER(Top,top) \
-EXIMAGE_BORDER(Right,right) \
-EXIMAGE_BORDER(Bottom,bottom) \
-EXIMAGE_BORDER(Left,left) \
-EXIMAGE_BORDER(Start,start) \
-EXIMAGE_BORDER(End,end)
+typedef NS_ENUM(NSInteger, EXImageBorder) {
+  EXImageBorderAll,
+  EXImageBorderTop,
+  EXImageBorderRight,
+  EXImageBorderBottom,
+  EXImageBorderLeft,
+  EXImageBorderStart,
+  EXImageBorderEnd,
+};
 
 typedef struct {
   CGFloat width;
   CGColorRef color;
   RCTBorderStyle style;
-} EXImageBorder;
+} EXImageBorderDef;
 
 typedef struct {
-  EXImageBorder all;
-  EXImageBorder top;
-  EXImageBorder right;
-  EXImageBorder bottom;
-  EXImageBorder left;
-  EXImageBorder start;
-  EXImageBorder end;
-} EXImageBorders;
+  EXImageBorderDef top;
+  EXImageBorderDef left;
+  EXImageBorderDef bottom;
+  EXImageBorderDef right;
+} EXImageBordersDef;
 
-typedef NS_ENUM(NSInteger, EXImageBorderLocation) {
-  EXImageBorderLocationTop,
-  EXImageBorderLocationRight,
-  EXImageBorderLocationBottom,
-  EXImageBorderLocationLeft,
-};
+@interface EXImageBorders : NSObject
 
-EXImageBorders EXImageBordersInit();
-EXImageBorder EXImageBorderMake(CGFloat width, CGColorRef color, RCTBorderStyle style);
-EXImageBorders EXImageBordersResolve(EXImageBorders borders, UIUserInterfaceLayoutDirection layoutDirection, BOOL swapLeftRightInRTL);
-BOOL EXImageBorderEqualTo(EXImageBorder border, EXImageBorder equalTo);
-BOOL EXImageBordersAllEqual(EXImageBorders borders);
-BOOL EXImageBorderVisible(EXImageBorder border);
-void EXImageBordersRelease(EXImageBorders borders);
-CALayer *EXImageBorderMask(CGRect bounds, EXImageBorderLocation location, EXImageBorders borders);
-CALayer *EXImageBorderSimpleLayer(CALayer *layer, EXImageBorder border, CGRect bounds, CGFloat cornerRadius);
-CALayer *EXImageBorderShapeLayer(CALayer *layer, EXImageBorder border, CGRect bounds, CGPathRef path, CALayer *mask);
+@property (nonatomic, assign) UIUserInterfaceLayoutDirection layoutDirection;
+
+- (instancetype)init;
+
+- (CGFloat)widthForBorder:(EXImageBorder)border;
+- (RCTBorderStyle)styleForBorder:(EXImageBorder)border;
+- (CGColorRef)colorForBorder:(EXImageBorder)border;
+
+- (BOOL)setWidth:(CGFloat)width border:(EXImageBorder)border;
+- (BOOL)setStyle:(RCTBorderStyle)style border:(EXImageBorder)border;
+- (BOOL)setColor:(CGColorRef)color border:(EXImageBorder)border;
+
+- (void)updateLayersForView:(UIView *)view
+                cornerRadii:(RCTCornerRadii)cornerRadii
+                     bounds:(CGRect)bounds
+               cachedLayers:(NSMutableDictionary<NSString *, CALayer *> *)cachedLayers;
+
+@end
 
